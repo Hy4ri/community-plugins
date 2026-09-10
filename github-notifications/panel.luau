@@ -374,6 +374,7 @@ local function renderContent()
     flexGrow = 1,
     gap = 6,
     paddingV = 2,
+    align = "stretch",
   }, cards)
 end
 
@@ -381,10 +382,9 @@ function renderPanel()
   local content = renderContent()
 
   panel.render(ui.column({
-    width = 500,
-    height = 440,
-    padding = 14,
+    flexGrow = 1,
     gap = 10,
+    align = "stretch",
   }, {
     renderHeader(),
     ui.separator({ thickness = 1, color = "outline/0.2", spacing = 6 }),

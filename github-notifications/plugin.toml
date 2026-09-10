@@ -31,7 +31,6 @@ default = "50"
 options = [
   { value = "25", label_key = "settings.per_page.options.twenty_five" },
   { value = "50", label_key = "settings.per_page.options.fifty" },
-  { value = "100", label_key = "settings.per_page.options.one_hundred" },
 ]
 
 [[widget]]
@@ -60,7 +59,7 @@ default = false
 id = "panel"
 entry = "panel.luau"
 width = 500
-height = 560
+height = 440
 placement = "attached"
 position = "auto"
 open_near_click = true

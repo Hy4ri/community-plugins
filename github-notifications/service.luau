@@ -4,6 +4,7 @@ local Notifications = require("./lib/notifications.luau")
 
 local inFlight = false
 local pendingThreads = {}
+local markAllPending = false
 local cacheFilePath = nil
 
 local function getCacheFilePath()
@@ -62,6 +63,23 @@ local function publishState(status, errorMsg)
   noctalia.state.set("github_notifications:error", errorMsg or "")
 end
 
+local function classifyError(stderr)
+  local lower = string.lower(stderr or "")
+  if string.find(lower, "rate limit", 1, true) or string.find(lower, "rate-limit", 1, true) or string.find(lower, "secondary rate", 1, true) then
+    return "rate_limited", noctalia.tr("status.rate_limited_detail")
+  end
+  if string.find(lower, "403", 1, true) or string.find(lower, "permission", 1, true) or string.find(lower, "scope", 1, true) or string.find(lower, "sso", 1, true) then
+    return "auth_error", noctalia.tr("status.permission_denied")
+  end
+  if string.find(lower, "auth", 1, true) or string.find(lower, "token", 1, true) or string.find(lower, "login", 1, true) or string.find(lower, "401", 1, true) then
+    return "auth_error", noctalia.tr("status.auth_error_detail")
+  end
+  if string.find(lower, "could not resolve host", 1, true) or string.find(lower, "connection refused", 1, true) or string.find(lower, "network", 1, true) or string.find(lower, "timed out", 1, true) or string.find(lower, "timeout", 1, true) then
+    return "error", noctalia.tr("status.network_error")
+  end
+  return "error", noctalia.tr("status.request_failed")
+end
+
 local function refresh()
   if inFlight then
     return
@@ -78,35 +96,40 @@ local function refresh()
 
   local perPageSetting = tostring(noctalia.getConfig("per_page") or "50")
   local perPage = tonumber(perPageSetting) or 50
+  perPage = math.max(1, math.min(perPage, 50))
   local queryParam = string.format("notifications?all=false&per_page=%d", perPage)
 
   noctalia.runAsync({ "gh", "api", queryParam }, function(result)
     inFlight = false
 
     if result.exitCode ~= 0 then
-      local stderr = string.lower(result.stderr or "")
-      -- Sanitize logs: never print full stderr if it could contain sensitive data
       noctalia.log("GitHub Notifications: API request failed (exit code " .. tostring(result.exitCode) .. ")")
+      local errStatus, errDetail = classifyError(result.stderr)
+      publishState(errStatus, errDetail)
+      return
+    end
 
-      if string.find(stderr, "auth", 1, true) or string.find(stderr, "token", 1, true) or string.find(stderr, "login", 1, true) or string.find(stderr, "401", 1, true) then
-        publishState("auth_error", noctalia.tr("status.auth_error_detail"))
-      elseif string.find(stderr, "rate limit", 1, true) or string.find(stderr, "403", 1, true) then
-        publishState("rate_limited", noctalia.tr("status.rate_limited_detail"))
-      elseif string.find(stderr, "could not resolve host", 1, true) or string.find(stderr, "connection refused", 1, true) or string.find(stderr, "network", 1, true) then
-        publishState("error", noctalia.tr("status.network_error"))
-      else
-        publishState("error", noctalia.tr("status.request_failed"))
-      end
+    -- If mark-all is currently in flight, drop stale GET results to prevent resurrection
+    if markAllPending then
       return
     end
 
     local rawList, decodeErr = noctalia.json.decode(result.stdout or "[]")
     if type(rawList) ~= "table" then
-      publishState("error", "Failed to parse GitHub response: " .. tostring(decodeErr))
+      publishState("error", noctalia.tr("status.request_failed"))
       return
     end
 
-    local items = Notifications.normalizeList(rawList)
+    local rawItems = Notifications.normalizeList(rawList)
+    local items = {}
+    for _, item in ipairs(rawItems) do
+      local idStr = tostring(item.id)
+      -- Exclude any thread currently being marked as read
+      if not pendingThreads[idStr] then
+        table.insert(items, item)
+      end
+    end
+
     local unreadCount = #items
 
     noctalia.state.set("github_notifications:items", items)
@@ -120,7 +143,7 @@ local function refresh()
 end
 
 local function markThreadRead(threadId)
-  -- SEC-2: Validate thread ID format before using in REST endpoint path
+  -- Validate thread ID format before using in REST endpoint path
   if not Notifications.isValidThreadId(threadId) then
     noctalia.log("GitHub Notifications: rejected invalid thread ID: " .. tostring(threadId))
     return
@@ -128,26 +151,27 @@ local function markThreadRead(threadId)
 
   local idStr = tostring(threadId)
 
-  -- SEC-4: Prevent duplicate simultaneous mark-read PATCH requests
+  -- Prevent duplicate simultaneous mark-read requests for the same thread
   if pendingThreads[idStr] == true then
     return
   end
   pendingThreads[idStr] = true
 
-  local items = noctalia.state.get("github_notifications:items") or {}
+  local currentItems = noctalia.state.get("github_notifications:items") or {}
+  local targetItem = nil
   local updatedItems = {}
-  local found = false
 
-  for _, item in ipairs(items) do
+  for _, item in ipairs(currentItems) do
     if tostring(item.id) == idStr then
-      found = true
+      targetItem = item
     else
       table.insert(updatedItems, item)
     end
   end
 
-  if found then
-    local newCount = #updatedItems
+  -- Optimistic local removal
+  if targetItem then
+    local newCount = math.max(0, #updatedItems)
     noctalia.state.set("github_notifications:items", updatedItems)
     noctalia.state.set("github_notifications:unread_count", newCount)
     persistCache(updatedItems, newCount)
@@ -156,17 +180,46 @@ local function markThreadRead(threadId)
   -- Send PATCH request to GitHub API
   noctalia.runAsync({ "gh", "api", "--method", "PATCH", "notifications/threads/" .. idStr }, function(result)
     pendingThreads[idStr] = nil
+
     if result.exitCode ~= 0 then
       noctalia.log("GitHub Notifications: failed to mark thread " .. idStr .. " as read (exit code " .. tostring(result.exitCode) .. ")")
+
+      -- Roll back optimistic removal on failure
+      if targetItem then
+        local itemsNow = noctalia.state.get("github_notifications:items") or {}
+        local alreadyPresent = false
+        for _, it in ipairs(itemsNow) do
+          if tostring(it.id) == idStr then
+            alreadyPresent = true
+            break
+          end
+        end
+        if not alreadyPresent then
+          table.insert(itemsNow, 1, targetItem)
+          local restoredCount = math.max(0, (noctalia.state.get("github_notifications:unread_count") or 0) + 1)
+          noctalia.state.set("github_notifications:items", itemsNow)
+          noctalia.state.set("github_notifications:unread_count", restoredCount)
+          persistCache(itemsNow, restoredCount)
+        end
+      end
+
+      local errStatus, errDetail = classifyError(result.stderr)
+      publishState(errStatus, errDetail)
     end
   end)
 end
 
 local function markAllRead()
+  if markAllPending then
+    return
+  end
+
   local items = noctalia.state.get("github_notifications:items") or {}
   if #items == 0 then
     return
   end
+
+  markAllPending = true
 
   -- Optimistic local clear
   local previousItems = items
@@ -177,13 +230,17 @@ local function markAllRead()
 
   -- Send PUT request to GitHub API
   noctalia.runAsync({ "gh", "api", "--method", "PUT", "notifications" }, function(result)
+    markAllPending = false
+
     if result.exitCode ~= 0 then
-      noctalia.log("GitHub Notifications: failed to mark all as read: " .. tostring(result.stderr))
+      noctalia.log("GitHub Notifications: failed to mark all as read (exit code " .. tostring(result.exitCode) .. ")")
       -- Restore state on failure
       noctalia.state.set("github_notifications:items", previousItems)
       noctalia.state.set("github_notifications:unread_count", previousCount)
-      publishState("error", "Failed to mark all as read on GitHub.")
       persistCache(previousItems, previousCount)
+
+      local errStatus, errDetail = classifyError(result.stderr)
+      publishState(errStatus, errDetail)
     end
   end)
 end
@@ -204,7 +261,7 @@ refresh()
 
 -- Listen for actions triggered from panel / widget via state
 noctalia.state.watch("github_notifications:action", function(action)
-  -- SEC-3: Validate shared-state payload structure and action type
+  -- Validate shared-state payload structure and action type
   if type(action) ~= "table" or type(action.type) ~= "string" then
     return
   end
@@ -236,7 +293,7 @@ function onConfigChanged()
 end
 
 function onIpc(event, payload)
-  -- SEC-3: Validate external IPC commands
+  -- Validate external IPC commands
   if event == "refresh" then
     refresh()
   elseif event == "mark_read" then

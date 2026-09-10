@@ -28,7 +28,7 @@ local function requestRefresh()
   })
 end
 
-local function markNotificationRead(item, openBrowser)
+local function markAsRead(item)
   if not item or not item.id or not Notifications.isValidThreadId(item.id) then
     return
   end
@@ -52,21 +52,27 @@ local function markNotificationRead(item, openBrowser)
 
   -- Rerender immediately for crisp UX
   renderPanel()
+end
 
-  -- Open in browser if requested
-  if openBrowser and item.url and item.url ~= "" then
-    if not Notifications.isValidGithubUrl(item.url) then
-      noctalia.notifyError(tr("panel.title"), "Invalid or untrusted notification link.")
-      return
-    end
-
-    if noctalia.commandExists("xdg-open") then
-      -- Pass URL directly in argv table; xdg-open 1.2.1 rejects unrecognized options
-      noctalia.runAsync({ "xdg-open", item.url })
-    else
-      noctalia.notifyError(tr("panel.title"), tr("status.missing_xdg_open"))
-    end
+local function openNotification(item)
+  if not item or not item.url or item.url == "" then
+    noctalia.notifyError(tr("panel.title"), "Notification link is missing.")
+    return
   end
+
+  if not Notifications.isValidGithubUrl(item.url) then
+    noctalia.notifyError(tr("panel.title"), "Invalid or untrusted notification link.")
+    return
+  end
+
+  if not noctalia.commandExists("xdg-open") then
+    noctalia.notifyError(tr("panel.title"), tr("status.missing_xdg_open"))
+    return
+  end
+
+  -- Only dispatch mark-read after verifying link is valid and openable
+  markAsRead(item)
+  noctalia.runAsync({ "xdg-open", item.url })
 end
 
 local function markAllNotificationsRead()
@@ -166,7 +172,7 @@ local function renderNotificationCard(item)
       gap = 8,
       align = "center",
       onClick = function()
-        markNotificationRead(item, true)
+        openNotification(item)
       end,
     }, {
       ui.column({
@@ -227,7 +233,7 @@ local function renderNotificationCard(item)
       controlSize = "sm",
       tooltip = tr("action.mark_read"),
       onClick = function()
-        markNotificationRead(item, false)
+        markAsRead(item)
       end,
     }),
   })
@@ -236,8 +242,7 @@ end
 local function renderContent()
   if status == "missing_gh" then
     return ui.column({
-      width = 472,
-      minHeight = 160,
+      flexGrow = 1,
       align = "center",
       justify = "center",
       gap = 10,
@@ -251,8 +256,7 @@ local function renderContent()
 
   if status == "auth_error" then
     return ui.column({
-      width = 472,
-      minHeight = 160,
+      flexGrow = 1,
       align = "center",
       justify = "center",
       gap = 10,
@@ -260,7 +264,7 @@ local function renderContent()
     }, {
       ui.glyph({ name = "lock", size = 32, color = "error" }),
       ui.label({ text = tr("status.auth_error_title"), fontSize = 13, fontWeight = "bold", color = "on_surface" }),
-      ui.label({ text = tr("status.auth_error_detail"), fontSize = 11, color = "on_surface_variant", textAlign = "center" }),
+      ui.label({ text = (errorDetail ~= "" and errorDetail or tr("status.auth_error_detail")), fontSize = 11, color = "on_surface_variant", textAlign = "center" }),
       ui.button({
         text = tr("action.try_again"),
         variant = "primary",
@@ -274,8 +278,7 @@ local function renderContent()
 
   if status == "rate_limited" then
     return ui.column({
-      width = 472,
-      minHeight = 160,
+      flexGrow = 1,
       align = "center",
       justify = "center",
       gap = 10,
@@ -297,8 +300,7 @@ local function renderContent()
 
   if status == "error" and (#items == 0) then
     return ui.column({
-      width = 472,
-      minHeight = 160,
+      flexGrow = 1,
       align = "center",
       justify = "center",
       gap = 10,
@@ -320,8 +322,7 @@ local function renderContent()
 
   if status == "loading" and (#items == 0) then
     return ui.column({
-      width = 472,
-      minHeight = 140,
+      flexGrow = 1,
       align = "center",
       justify = "center",
       gap = 10,
@@ -334,8 +335,7 @@ local function renderContent()
 
   if #items == 0 then
     return ui.column({
-      width = 472,
-      minHeight = 160,
+      flexGrow = 1,
       align = "center",
       justify = "center",
       gap = 8,
@@ -370,19 +370,8 @@ local function renderContent()
     table.insert(cards, renderNotificationCard(it))
   end
 
-  local count = #items
-  local scrollHeight = nil
-  if count <= 4 then
-    -- Fit natural height for 1-4 items: ~60px per card + 6px gap
-    scrollHeight = (count * 60) + ((count - 1) * 6)
-  else
-    -- Cap at max 460px so header + separator + cards stay comfortably within 560px screen height
-    scrollHeight = 460
-  end
-
   return ui.scroll({
-    width = 472,
-    height = scrollHeight,
+    flexGrow = 1,
     gap = 6,
     paddingV = 2,
   }, cards)
@@ -393,6 +382,7 @@ function renderPanel()
 
   panel.render(ui.column({
     width = 500,
+    height = 440,
     padding = 14,
     gap = 10,
   }, {

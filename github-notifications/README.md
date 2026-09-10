@@ -55,7 +55,7 @@ relies completely on your local `gh` session.
 | Setting | Options | Default |
 | :--- | :--- | :--- |
 | Automatic refresh interval | Every 1, 2, 5, or 10 minutes | Every 2 minutes |
-| Notification limit | 25, 50, or 100 notifications | 50 notifications |
+| Notification limit | 25 or 50 notifications | 50 notifications |
 | Widget display mode | Icon and count, or icon only | Icon and count |
 | Hide count when zero | On or off | Off (shows 0) |
 

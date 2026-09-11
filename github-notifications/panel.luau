@@ -56,12 +56,12 @@ end
 
 local function openNotification(item)
   if not item or not item.url or item.url == "" then
-    noctalia.notifyError(tr("panel.title"), "Notification link is missing.")
+    noctalia.notifyError(tr("panel.title"), tr("status.notification_link_missing"))
     return
   end
 
   if not Notifications.isValidGithubUrl(item.url) then
-    noctalia.notifyError(tr("panel.title"), "Invalid or untrusted notification link.")
+    noctalia.notifyError(tr("panel.title"), tr("status.invalid_notification_link"))
     return
   end
 

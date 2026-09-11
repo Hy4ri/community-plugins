@@ -52,6 +52,7 @@
     "auth_error_detail": "Run `gh auth login` in your terminal to authenticate your GitHub account.",
     "auth_error_title": "Authentication Required",
     "generic_error": "Failed to Load Notifications",
+    "invalid_notification_link": "Invalid or untrusted notification link.",
     "loading": "Loading notifications…",
     "missing_gh": "GitHub CLI is not installed",
     "missing_gh_detail": "Install `gh` on your system PATH to enable GitHub notifications.",
@@ -62,6 +63,7 @@
     "rate_limited_title": "Rate Limit Exceeded",
     "request_failed": "GitHub API request failed",
     "network_error": "Network request failed. Check your internet connection.",
+    "notification_link_missing": "Notification link is missing.",
     "permission_denied": "GitHub notifications permission unavailable. Check `gh auth status`.",
     "unavailable": "GitHub notifications unavailable"
   },

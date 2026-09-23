@@ -21,6 +21,20 @@ end
 -- once per build and fall back to the STATUS_META defaults.
 local sharedColors = {}
 
+local function isRoleToken(color)
+  return type(color) == "string" and color:sub(1, 1) ~= "#" and not color:find("/")
+end
+
+local function getRadius(baseRadius)
+  if noctalia.getSetting then
+    local scale = noctalia.getSetting("shell.corner_radius_scale")
+    if type(scale) == "number" then
+      return math.floor(baseRadius * scale)
+    end
+  end
+  return baseRadius
+end
+
 local function loadSharedColors()
   local settings = noctalia.state.get("herdr.settings")
   sharedColors = type(settings) == "table" and settings or {}
@@ -51,7 +65,7 @@ local function messageCard(glyph, text, color)
     gap = 9,
     align = "center",
     padding = 10,
-    radius = 8,
+    radius = getRadius(8),
     fill = "surface_variant/0.35",
   }, {
     ui.glyph({ name = glyph, size = 19, color = color or "on_surface_variant" }),
@@ -138,11 +152,13 @@ function M.build(snapshot, options)
       gap = 8,
       align = "center",
       padding = 7,
-      radius = 6,
+      radius = getRadius(6),
       -- A child row sits on surface_variant rather than the panel's own surface, so it
       -- reads as a lighter card nested inside its workspace instead of blending into
       -- the panel background.
-      fill = attention and (meta.color .. "/0.10") or "surface_variant/0.16",
+      -- Noctalia only supports alpha suffixes on role tokens; fall back to surface_variant if custom hex.
+      fill = attention and (isRoleToken(meta.color) and (meta.color .. "/0.10") or "surface_variant/0.24")
+        or "surface_variant/0.16",
       onClick = remote and nil or function()
         request("focus_agent", session.name, pane.pane)
       end,
@@ -190,8 +206,9 @@ function M.build(snapshot, options)
       gap = 8,
       align = "center",
       padding = 8,
-      radius = 7,
-      fill = attention and (meta.color .. "/0.10") or "surface_variant/0.30",
+      radius = getRadius(7),
+      fill = attention and (isRoleToken(meta.color) and (meta.color .. "/0.10") or "surface_variant/0.40")
+        or "surface_variant/0.30",
     }, {
       ui.glyph({ name = meta.glyph, size = 16, color = meta.color }),
       ui.column({ gap = 1, flexGrow = 1 }, {
@@ -223,10 +240,11 @@ function M.build(snapshot, options)
       gap = 8,
       align = "center",
       padding = 8,
-      radius = 7,
+      radius = getRadius(7),
       -- Same fill as a multi-pane workspace header: a workspace looks like a workspace
       -- whether it holds one pane or several.
-      fill = attention and (meta.color .. "/0.10") or "surface_variant/0.30",
+      fill = attention and (isRoleToken(meta.color) and (meta.color .. "/0.10") or "surface_variant/0.40")
+        or "surface_variant/0.30",
       onClick = clickable and function()
         request("focus_agent", session.name, pane.pane)
       end or nil,
@@ -427,7 +445,7 @@ function M.build(snapshot, options)
       key = "session-" .. session.name,
       gap = 7,
       padding = 10,
-      radius = 9,
+      radius = getRadius(9),
       fill = "surface_variant/0.22",
     }, children)
   end

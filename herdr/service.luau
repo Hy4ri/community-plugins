@@ -22,7 +22,6 @@ local MAX_SESSIONS = 200
 local MAX_AGENTS_PER_SESSION = 500
 local MAX_MACHINES = 10
 local MACHINE_TIMEOUT_MS = 10000
-local MACHINE_MIN_INTERVAL_MS = 15000
 
 local STATUS_PRIORITY = {
   blocked = 1,
@@ -457,10 +456,10 @@ local function normalizeSnapshot(sessionInfo, decoded)
 end
 
 -- Other machines saved in HerdR ("herdr machine list"). Their sessions are only
--- reachable over the socket API, so they are read as extra rows while the panel
--- is open and cached between fetches. Only the bar rollup ignores them.
+-- reachable over the socket API, so they are read as extra rows and cached between
+-- fetches. When show_other_machines is enabled, their agent states count toward the
+-- bar rollup and panel summary just like local sessions.
 local machineCache = {}
-local lastMachineFetch = 0
 
 local function machineSnapshotCommand(machine)
   return { "herdr", "--machine", machine.id, "api", "snapshot" }
@@ -972,19 +971,10 @@ function refresh()
     end
 
     if noctalia.getConfig("show_other_machines") == true then
-      -- Machine snapshots cross SSH, so they are polled only while the panel is
-      -- open and at most once per MACHINE_MIN_INTERVAL_MS.
-      if panelOpen then
-        local now = noctalia.nowMs()
-        if now - lastMachineFetch >= MACHINE_MIN_INTERVAL_MS then
-          lastMachineFetch = now
-          pending = pending + 1
-          fetchMachines(generation, snapshotDone)
-        end
-      end
-    elseif next(machineCache) ~= nil or lastMachineFetch ~= 0 then
+      pending = pending + 1
+      fetchMachines(generation, snapshotDone)
+    elseif next(machineCache) ~= nil then
       machineCache = {}
-      lastMachineFetch = 0
     end
 
     local count = 0
@@ -1283,8 +1273,6 @@ function update()
 end
 
 function onConfigChanged()
-  -- Drop cached machine rows so a settings change re-reads them immediately.
-  lastMachineFetch = 0
   if noctalia.getConfig("show_other_machines") ~= true then
     machineCache = {}
   end

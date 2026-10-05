@@ -34,16 +34,6 @@ options = [
 ]
 
 [[setting]]
-key = "appearance_font_scale"
-type = "int"
-label_key = "settings.appearance_font_scale.label"
-description_key = "settings.appearance_font_scale.description"
-default = 100
-min = 80
-max = 130
-step = 5
-
-[[setting]]
 key = "mark_read_on_open"
 type = "bool"
 label_key = "settings.mark_read_on_open.label"

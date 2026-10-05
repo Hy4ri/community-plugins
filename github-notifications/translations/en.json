@@ -34,10 +34,6 @@
         "standard": "Standard"
       }
     },
-    "appearance_font_scale": {
-      "description": "Scale text in the notifications panel.",
-      "label": "Font scale"
-    },
     "group_by_repo": {
       "description": "Group notifications under collapsible repository headers.",
       "label": "Group by repository"

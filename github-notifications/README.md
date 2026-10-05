@@ -65,7 +65,6 @@ relies completely on your local `gh` session.
 | Mark read on open | On or off | On |
 | Group by repository | On or off | Off |
 | Density | Compact, Standard, or Comfortable | Standard |
-| Font scale | 80% to 130% in steps of 5 | 100% |
 
 ## IPC Commands
 
@@ -97,6 +96,10 @@ in Noctalia's secure per-plugin data directory (`$XDG_STATE_HOME/noctalia/`) to 
 ## Limitations
 
 This plugin is intentionally focused on being a fast, lightweight notification inbox. It does not attempt to be a full GitHub client (no issue editing, PR merging, or code review workflows).
+
+Text size follows Noctalia's own scaling: the shell **UI scale** is applied to the panel by Noctalia, and the
+bar widget's **Font Scale** (widget settings, `font_scale`) is applied on top. If you have several inbox
+widgets, the first one that sets a `font_scale` is used.
 
 Panel width and height are fixed by the plugin manifest (500 x 440); Noctalia has no user-facing panel size
 setting for plugins. Titles wrap to two lines and other labels truncate, so large font scales stay readable.

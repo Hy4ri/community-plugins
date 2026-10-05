@@ -30,10 +30,31 @@ local function getRadius(baseRadius)
   return baseRadius
 end
 
+-- The host already multiplies every panel fontSize by the shell's ui_scale, so only the
+-- bar widget's own font_scale (which the host never forwards to panels) is applied here.
+local WIDGET_TYPE = "hy4ri/github-notifications:inbox"
+local widgetFontScale = 1
+
+local function resolveWidgetFontScale()
+  widgetFontScale = 1
+  if not noctalia.getSetting then
+    return
+  end
+  local widgets = noctalia.getSetting("widget")
+  if type(widgets) ~= "table" then
+    return
+  end
+  -- Instances are user-named; take the first inbox widget that sets a font_scale.
+  for _, def in pairs(widgets) do
+    if type(def) == "table" and def.type == WIDGET_TYPE and type(def.font_scale) == "number" then
+      widgetFontScale = math.max(0.2, math.min(2.5, def.font_scale))
+      return
+    end
+  end
+end
+
 local function font(size)
-  local scale = tonumber(noctalia.getConfig("appearance_font_scale")) or 100
-  scale = math.max(80, math.min(130, scale))
-  return math.floor(size * scale / 100 + 0.5)
+  return math.floor(size * widgetFontScale + 0.5)
 end
 
 local function cfgBool(key, default)
@@ -661,6 +682,7 @@ local function renderUndoBar()
 end
 
 function renderPanel()
+  resolveWidgetFontScale()
   shownItems = visibleItems()
   local counts = categoryCounts(shownItems)
   if filter ~= "all" and (counts[filter] or 0) == 0 then

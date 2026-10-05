@@ -46,10 +46,6 @@
       "description": "Mark a notification as read when you click it to open it in the browser. Turn off to peek and keep it unread; the check button still marks it read.",
       "label": "Mark read on open"
     },
-    "panel_font_scale": {
-      "description": "Scales text in the notifications panel that opens from this widget. Does not change the number on the bar; use the widget's Font Scale for that.",
-      "label": "Panel font scale"
-    },
     "per_page": {
       "description": "Maximum number of unread notifications to retrieve from GitHub.",
       "label": "Notification limit",

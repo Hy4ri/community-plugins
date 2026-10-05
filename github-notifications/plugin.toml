@@ -75,16 +75,6 @@ options = [
 ]
 
 [[widget.setting]]
-key = "panel_font_scale"
-type = "double"
-label_key = "settings.panel_font_scale.label"
-description_key = "settings.panel_font_scale.description"
-default = 1.0
-min = 0.5
-max = 2.5
-step = 0.05
-
-[[widget.setting]]
 key = "hide_when_zero"
 type = "bool"
 label_key = "settings.hide_when_zero.label"

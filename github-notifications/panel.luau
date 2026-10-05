@@ -30,15 +30,14 @@ local function getRadius(baseRadius)
   return baseRadius
 end
 
--- The host already multiplies every panel fontSize by the shell's ui_scale. The bar widget's
--- own font_scale is deliberately NOT used (the host applies it to the bar number too).
--- Panel-only scaling is the widget's `panel_font_scale`, published into plugin state by
--- widget.luau because widget-scoped settings are not readable from the panel entry.
+-- The host already multiplies every panel fontSize by the shell's ui_scale. The widget's own
+-- font_scale never reaches panels, so widget.luau publishes it into plugin state (and cancels
+-- it on the bar number); applying it here makes it a panel-only scale.
 local widgetFontScale = 1
 
 local function resolveWidgetFontScale()
   local value = tonumber(noctalia.state.get("github_notifications:panel_font_scale")) or 1
-  widgetFontScale = math.max(0.5, math.min(2.5, value))
+  widgetFontScale = math.max(0.2, math.min(2.5, value))
 end
 
 local function font(size)

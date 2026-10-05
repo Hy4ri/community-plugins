@@ -683,7 +683,7 @@ function renderPanel()
       table.insert(children, filters)
     end
   end
-  table.insert(children, ui.separator({ thickness = 1, color = "outline/0.2", spacing = 6 }))
+  table.insert(children, ui.separator({ thickness = 1, color = "outline/0.2", spacing = 0 }))
   table.insert(children, renderContent())
   local undoBar = renderUndoBar()
   if undoBar then
@@ -692,7 +692,7 @@ function renderPanel()
 
   panel.render(ui.column({
     flexGrow = 1,
-    gap = 10,
+    gap = 6,
     align = "stretch",
   }, children))
 end

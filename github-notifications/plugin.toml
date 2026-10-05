@@ -1,6 +1,6 @@
 id = "hy4ri/github-notifications"
 name = "GitHub Notifications"
-version = "0.1.1"
+version = "0.2.0"
 plugin_api = 24
 author = "hy4ri"
 license = "MIT"
@@ -42,6 +42,32 @@ default = 100
 min = 80
 max = 130
 step = 5
+
+[[setting]]
+key = "mark_read_on_open"
+type = "bool"
+label_key = "settings.mark_read_on_open.label"
+description_key = "settings.mark_read_on_open.description"
+default = true
+
+[[setting]]
+key = "group_by_repo"
+type = "bool"
+label_key = "settings.group_by_repo.label"
+description_key = "settings.group_by_repo.description"
+default = false
+
+[[setting]]
+key = "appearance_density"
+type = "select"
+label_key = "settings.appearance_density.label"
+description_key = "settings.appearance_density.description"
+default = "standard"
+options = [
+  { value = "compact", label_key = "settings.appearance_density.options.compact" },
+  { value = "standard", label_key = "settings.appearance_density.options.standard" },
+  { value = "comfortable", label_key = "settings.appearance_density.options.comfortable" },
+]
 
 [[widget]]
 id = "inbox"

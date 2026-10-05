@@ -1,6 +1,6 @@
 id = "hy4ri/github-notifications"
 name = "GitHub Notifications"
-version = "0.1.0"
+version = "0.1.1"
 plugin_api = 24
 author = "hy4ri"
 license = "MIT"
@@ -32,6 +32,16 @@ options = [
   { value = "25", label_key = "settings.per_page.options.twenty_five" },
   { value = "50", label_key = "settings.per_page.options.fifty" },
 ]
+
+[[setting]]
+key = "appearance_font_scale"
+type = "int"
+label_key = "settings.appearance_font_scale.label"
+description_key = "settings.appearance_font_scale.description"
+default = 100
+min = 80
+max = 130
+step = 5
 
 [[widget]]
 id = "inbox"

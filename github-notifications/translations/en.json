@@ -16,6 +16,10 @@
     "updated_at": "Updated {time}"
   },
   "settings": {
+    "appearance_font_scale": {
+      "description": "Scale text in the notifications panel.",
+      "label": "Font scale"
+    },
     "hide_when_zero": {
       "description": "Hide the unread count on the bar widget when there are 0 unread notifications.",
       "label": "Hide count when zero"

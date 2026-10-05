@@ -21,6 +21,12 @@ local function getRadius(baseRadius)
   return baseRadius
 end
 
+local function font(size)
+  local scale = tonumber(noctalia.getConfig("appearance_font_scale")) or 100
+  scale = math.max(80, math.min(130, scale))
+  return math.floor(size * scale / 100 + 0.5)
+end
+
 local function requestRefresh()
   noctalia.state.set("github_notifications:action", {
     type = "refresh",
@@ -119,13 +125,13 @@ local function renderHeader()
     ui.column({ gap = 2 }, {
       ui.label({
         text = tr("panel.title"),
-        fontSize = 15,
+        fontSize = font(15),
         fontWeight = "bold",
         color = "primary",
       }),
       ui.label({
         text = subtitle,
-        fontSize = 11,
+        fontSize = font(11),
         color = "on_surface_variant",
       }),
     }),
@@ -193,13 +199,13 @@ local function renderNotificationCard(item)
         ui.label({
           text = item.title,
           maxLines = 2,
-          fontSize = 12,
+          fontSize = font(12),
           fontWeight = "medium",
           color = "on_surface",
         }),
         ui.label({
           text = item.repo,
-          fontSize = 10,
+          fontSize = font(11),
           color = "on_surface_variant",
           maxLines = 1,
         }),
@@ -209,18 +215,18 @@ local function renderNotificationCard(item)
         }, {
           ui.label({
             text = item.reasonLabel,
-            fontSize = 9,
+            fontSize = font(10),
             fontWeight = "medium",
             color = item.isFailure and "error" or "primary",
           }),
           ui.label({
             text = "·",
-            fontSize = 9,
+            fontSize = font(10),
             color = "on_surface_variant",
           }),
           ui.label({
             text = item.relativeTime,
-            fontSize = 9,
+            fontSize = font(10),
             color = "on_surface_variant",
           }),
         }),
@@ -249,8 +255,8 @@ local function renderContent()
       padding = 20,
     }, {
       ui.glyph({ name = "alert-triangle", size = 32, color = "error" }),
-      ui.label({ text = tr("status.missing_gh_title"), fontSize = 13, fontWeight = "bold", color = "error" }),
-      ui.label({ text = tr("status.missing_gh_detail"), fontSize = 11, color = "on_surface_variant", textAlign = "center" }),
+      ui.label({ text = tr("status.missing_gh_title"), fontSize = font(13), fontWeight = "bold", color = "error" }),
+      ui.label({ text = tr("status.missing_gh_detail"), fontSize = font(11), color = "on_surface_variant", textAlign = "center" }),
     })
   end
 
@@ -263,8 +269,8 @@ local function renderContent()
       padding = 20,
     }, {
       ui.glyph({ name = "lock", size = 32, color = "error" }),
-      ui.label({ text = tr("status.auth_error_title"), fontSize = 13, fontWeight = "bold", color = "on_surface" }),
-      ui.label({ text = (errorDetail ~= "" and errorDetail or tr("status.auth_error_detail")), fontSize = 11, color = "on_surface_variant", textAlign = "center" }),
+      ui.label({ text = tr("status.auth_error_title"), fontSize = font(13), fontWeight = "bold", color = "on_surface" }),
+      ui.label({ text = (errorDetail ~= "" and errorDetail or tr("status.auth_error_detail")), fontSize = font(11), color = "on_surface_variant", textAlign = "center" }),
       ui.button({
         text = tr("action.try_again"),
         variant = "primary",
@@ -285,8 +291,8 @@ local function renderContent()
       padding = 20,
     }, {
       ui.glyph({ name = "hourglass", size = 32, color = "primary" }),
-      ui.label({ text = tr("status.rate_limited_title"), fontSize = 13, fontWeight = "bold", color = "on_surface" }),
-      ui.label({ text = tr("status.rate_limited_detail"), fontSize = 11, color = "on_surface_variant", textAlign = "center" }),
+      ui.label({ text = tr("status.rate_limited_title"), fontSize = font(13), fontWeight = "bold", color = "on_surface" }),
+      ui.label({ text = tr("status.rate_limited_detail"), fontSize = font(11), color = "on_surface_variant", textAlign = "center" }),
       ui.button({
         text = tr("action.try_again"),
         variant = "outline",
@@ -307,8 +313,8 @@ local function renderContent()
       padding = 20,
     }, {
       ui.glyph({ name = "alert-circle", size = 32, color = "error" }),
-      ui.label({ text = tr("status.generic_error"), fontSize = 13, fontWeight = "bold", color = "on_surface" }),
-      ui.label({ text = errorDetail ~= "" and errorDetail or tr("status.unavailable"), fontSize = 11, color = "on_surface_variant", textAlign = "center" }),
+      ui.label({ text = tr("status.generic_error"), fontSize = font(13), fontWeight = "bold", color = "on_surface" }),
+      ui.label({ text = errorDetail ~= "" and errorDetail or tr("status.unavailable"), fontSize = font(11), color = "on_surface_variant", textAlign = "center" }),
       ui.button({
         text = tr("action.try_again"),
         variant = "outline",
@@ -329,7 +335,7 @@ local function renderContent()
       paddingV = 20,
     }, {
       ui.glyph({ name = "loader-2", size = 28, color = "primary" }),
-      ui.label({ text = tr("status.loading"), fontSize = 12, color = "on_surface_variant" }),
+      ui.label({ text = tr("status.loading"), fontSize = font(12), color = "on_surface_variant" }),
     })
   end
 
@@ -353,13 +359,13 @@ local function renderContent()
       }),
       ui.label({
         text = tr("empty.title"),
-        fontSize = 14,
+        fontSize = font(14),
         fontWeight = "semibold",
         color = "on_surface",
       }),
       ui.label({
         text = tr("empty.subtitle"),
-        fontSize = 11,
+        fontSize = font(11),
         color = "on_surface_variant",
       }),
     })

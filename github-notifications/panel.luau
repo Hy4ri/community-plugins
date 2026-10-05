@@ -30,27 +30,15 @@ local function getRadius(baseRadius)
   return baseRadius
 end
 
--- The host already multiplies every panel fontSize by the shell's ui_scale, so only the
--- bar widget's own font_scale (which the host never forwards to panels) is applied here.
-local WIDGET_TYPE = "hy4ri/github-notifications:inbox"
+-- The host already multiplies every panel fontSize by the shell's ui_scale. The bar widget's
+-- own font_scale is deliberately NOT used (the host applies it to the bar number too).
+-- Panel-only scaling is the widget's `panel_font_scale`, published into plugin state by
+-- widget.luau because widget-scoped settings are not readable from the panel entry.
 local widgetFontScale = 1
 
 local function resolveWidgetFontScale()
-  widgetFontScale = 1
-  if not noctalia.getSetting then
-    return
-  end
-  local widgets = noctalia.getSetting("widget")
-  if type(widgets) ~= "table" then
-    return
-  end
-  -- Instances are user-named; take the first inbox widget that sets a font_scale.
-  for _, def in pairs(widgets) do
-    if type(def) == "table" and def.type == WIDGET_TYPE and type(def.font_scale) == "number" then
-      widgetFontScale = math.max(0.2, math.min(2.5, def.font_scale))
-      return
-    end
-  end
+  local value = tonumber(noctalia.state.get("github_notifications:panel_font_scale")) or 1
+  widgetFontScale = math.max(0.5, math.min(2.5, value))
 end
 
 local function font(size)
@@ -709,6 +697,10 @@ function renderPanel()
     align = "stretch",
   }, children))
 end
+
+noctalia.state.watch("github_notifications:panel_font_scale", function(_val)
+  renderPanel()
+end)
 
 noctalia.state.watch("github_notifications:items", function(val)
   items = val or {}

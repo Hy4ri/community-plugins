@@ -56,6 +56,10 @@ local function formatText()
   return tostring(count)
 end
 
+local function publishPanelFontScale()
+  noctalia.state.set("github_notifications:panel_font_scale", tonumber(noctalia.getConfig("panel_font_scale")) or 1)
+end
+
 local function render()
   local count = tonumber(unreadCount) or 0
   barWidget.setGlyph("brand-github")
@@ -100,4 +104,10 @@ function onRightClick()
   })
 end
 
+function onConfigChanged()
+  publishPanelFontScale()
+  render()
+end
+
+publishPanelFontScale()
 render()

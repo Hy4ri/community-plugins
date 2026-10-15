@@ -62,11 +62,57 @@ end
 
 local function readToken()
     local token = noctalia.getenv("TODOIST_TOKEN")
-    if token == nil or token == "" then
-        token = noctalia.readFile(noctalia.getConfig("token_file") or "")
+    if token ~= nil and token ~= "" then
+        token = noctalia.string.trim(token)
+        return if token ~= "" then token else nil
     end
-    token = token and noctalia.string.trim(token) or ""
-    return if token ~= "" then token else nil
+
+    local contents = noctalia.readFile(noctalia.getConfig("token_file") or "")
+    contents = contents and noctalia.string.trim(contents) or ""
+    if contents == "" then
+        return nil
+    end
+
+    -- Read literal assignments only: never source a shell file or expand its values.
+    local found = false
+    for line in (contents .. "\n"):gmatch("([^\n]*)\n") do
+        line = noctalia.string.trim(line):gsub("^export%s+", "")
+        local value = line:match("^TODOIST_TOKEN%s*=%s*(.*)$")
+        if value ~= nil then
+            if found then
+                return nil, "error.invalid_token_file"
+            end
+            found = true
+            local quote = value:sub(1, 1)
+            local tail
+            if quote == '"' or quote == "'" then
+                local closing = value:find(quote, 2, true)
+                if not closing then
+                    return nil, "error.invalid_token_file"
+                end
+                tail = noctalia.string.trim(value:sub(closing + 1))
+                value = value:sub(2, closing - 1)
+            else
+                value, tail = value:match("^(%S+)%s*(.*)$")
+            end
+            if not value or value == "" or value:find("[%s$`\\'\";|&<>()#]") then
+                return nil, "error.invalid_token_file"
+            end
+            if tail ~= "" and tail:sub(1, 1) ~= "#" then
+                return nil, "error.invalid_token_file"
+            end
+            token = value
+        end
+    end
+    if found then
+        return token
+    end
+
+    -- Preserve raw-token files, but do not send unrelated shell configuration as a token.
+    if contents:find("[%s=$`\\'\";|&<>()#]") then
+        return nil, "error.invalid_token_file"
+    end
+    return contents
 end
 
 -- Follows next_cursor until every active task is collected.
@@ -185,10 +231,10 @@ local function refresh()
     if fetching then
         return
     end
-    local token = readToken()
+    local token, tokenError = readToken()
     if token == nil then
         tasks = nil
-        lastError = tr("error.no_token")
+        lastError = tr(tokenError or "error.no_token")
         render()
         return
     end

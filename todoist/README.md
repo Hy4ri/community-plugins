@@ -23,7 +23,21 @@ printf '%s' 'YOUR_API_TOKEN' > ~/.config/todoist/token
 chmod 600 ~/.config/todoist/token
 ```
 
-The `TODOIST_TOKEN` environment variable is used instead when it is set.
+Alternatively, point **API token file** at a shell configuration file such as `~/.zshenv` containing one literal
+assignment:
+
+```sh
+export TODOIST_TOKEN="YOUR_API_TOKEN"
+```
+
+`export` is optional. Double-quoted, single-quoted, and unquoted values are supported, along with surrounding
+whitespace and a trailing comment separated by whitespace. Other lines in the file are ignored. The file is read
+as text, never sourced or executed: shell expansions, command substitutions, escapes, multiline values, and multiple
+`TODOIST_TOKEN` assignments are not supported and produce an error instead of a request.
+
+The `TODOIST_TOKEN` environment variable inherited by Noctalia is used instead when it is set. Merely defining it
+in `~/.zshenv` does not update an already-running Noctalia process; select that file in the plugin settings to read
+the assignment directly.
 
 ## Usage
 
@@ -62,7 +76,7 @@ left = "exec xdg-open https://app.todoist.com/app/upcoming"
 
 | Setting | Scope | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `token_file` | Plugin | `file` | `~/.config/todoist/token` | File holding your API token. |
+| `token_file` | Plugin | `file` | `~/.config/todoist/token` | File holding a raw API token or one literal `TODOIST_TOKEN` assignment. |
 | `refresh_minutes` | Plugin | `int` | `5` | Minutes between fetches (1–120). |
 | `glyph` | Widget | `glyph` | `checkbox` | Bar icon. |
 | `max_upcoming` | Widget | `int` | `10` | Upcoming tasks listed in the tooltip (0–50). Overdue tasks are always listed. |

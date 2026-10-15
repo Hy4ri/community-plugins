@@ -2,7 +2,7 @@
   "settings": {
     "token_file": {
       "label": "API token file",
-      "description": "File holding your Todoist API token (Settings → Integrations → Developer). Keep it chmod 600. The TODOIST_TOKEN environment variable takes precedence."
+      "description": "File containing a raw Todoist API token or one literal TODOIST_TOKEN assignment (for example ~/.zshenv). Keep it chmod 600. The inherited TODOIST_TOKEN environment variable takes precedence."
     },
     "refresh_minutes": {
       "label": "Refresh interval (minutes)",
@@ -37,6 +37,7 @@
   },
   "error": {
     "no_token": "No API token. Set the token file in the plugin settings.",
+    "invalid_token_file": "Invalid token file. Use a raw token or one literal TODOIST_TOKEN assignment; shell expressions and duplicate assignments are not supported.",
     "http": "Todoist request failed (HTTP {status})",
     "parse": "Could not read Todoist's response"
   }
